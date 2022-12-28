@@ -1,0 +1,160 @@
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd">
+    <changeSet author="wasp" id="1618078766047-1">
+        <preConditions>
+            <not>
+                <tableExists tableName="users"/>
+            </not>
+        </preConditions>
+        <sql>
+            create table if not exists users
+            (
+            id bigserial not null
+            constraint persons_pkey
+            primary key,
+            first_name varchar(255),
+            last_name varchar(255),
+            login varchar(64),
+            password varchar(64),
+            shopping_cart_id bigint
+            constraint users_sc_fk
+            references shopping_cart
+            );
+
+            alter table users owner to postgres;
+        </sql>
+    </changeSet>
+    <changeSet author="wasp" id="1618079191528-1">
+        <preConditions>
+            <not>
+                <tableExists tableName="product"/>
+            </not>
+        </preConditions>
+        <sql>
+            create table product
+            (
+            id bigserial not null
+            constraint product_pkey
+            primary key,
+            name varchar(255),
+            price double precision
+            );
+
+            alter table product owner to postgres;
+        </sql>
+    </changeSet>
+    <changeSet id="create role base" author="wasp">
+        <preConditions>
+            <not>
+                <tableExists tableName="role"/>
+            </not>
+        </preConditions>
+        <sql>
+            create table role
+            (
+            id bigserial not null
+            constraint role_pkey
+            primary key,
+            name varchar(64)
+            );
+
+            alter table role owner to postgres;
+        </sql>
+    </changeSet>
+    <changeSet id="create users_roles base" author="wasp">
+        <sql>
+            create table if not exists users_roles
+            (
+            id bigserial not null
+            constraint person_roles_pk
+            primary key,
+            user_id bigint
+            constraint users_roles_user_fk
+            references users,
+            role_id bigint
+            constraint person_roles_role_fk
+            references role
+            );
+
+            alter table users_roles owner to postgres;
+        </sql>
+    </changeSet>
+    <changeSet id="create shopping_cart base" author="wasp">
+        <sql>
+            create table if not exists shopping_cart
+            (
+            id bigserial not null
+            constraint shopping_cart_pk
+            primary key,
+            user_id bigint
+            constraint shopping_cart_user_fk
+            references users
+            );
+
+            alter table shopping_cart owner to postgres;
+        </sql>
+    </changeSet>
+    <changeSet id="create shopping_cart_item" author="wasp">
+        <sql>
+            create table if not exists shopping_cart_item
+            (
+            id bigserial not null
+            constraint shopping_cart_item_pk
+            primary key,
+            shopping_cart_id bigint,
+            quantity integer,
+            product_id bigint
+            constraint shopping_cart_item_product_fk
+            references product
+            );
+
+            alter table shopping_cart_item owner to postgres;
+        </sql>
+    </changeSet>
+    <changeSet author="wasp" id="role_add">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <sqlCheck expectedResult="ROLE_ADMIN">
+                    SELECT name FROM public.role WHERE name = 'ROLE_ADMIN'
+                </sqlCheck>
+                <sqlCheck expectedResult="ROLE_USER">
+                    SELECT name FROM public.role WHERE name = 'ROLE_USER'
+                </sqlCheck>
+                <sqlCheck expectedResult="ROLE_MANAGER">
+                    SELECT name FROM public.role WHERE name = 'ROLE_MANAGER'
+                </sqlCheck>
+            </not>
+        </preConditions>
+        <sql>
+            INSERT INTO public.role (id, name) VALUES (1, 'ROLE_ADMIN');
+            INSERT INTO public.role (id, name) VALUES (2, 'ROLE_USER');
+            INSERT INTO public.role (id, name) VALUES (3, 'ROLE_MANAGER');
+        </sql>
+    </changeSet>
+    <changeSet id="create_order_table" author="wasp">
+        <sql>
+            create table if not exists orders
+            (
+            id bigserial not null
+            constraint orders_pk
+            primary key,
+            user_id bigint
+            constraint orders_user_fk
+            references users
+            );
+
+            alter table orders owner to postgres;
+        </sql>
+    </changeSet>
+    <changeSet id="add user" author="wasp">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <sqlCheck expectedResult="test1">
+                    SELECT login from public.users WHERE login = 'test1'
+                </sqlCheck>
+            </not>
+        </preConditions>
+        <sql>
+            INSERT INTO public.users (first_name, last_name, login, password, shopping_cart_id) VALUES (test, test, 'test1', '$2a$10$abpshqCGFT0hpyPHYpu2S.8Kjmh/4C8PTRLXhMB..ZxhR.gNEsGDu', 1);
+        </sql>
+    </changeSet>
+</databaseChangeLog>
